@@ -1,0 +1,7 @@
+[Activity]
+name = ComunicatorMaker
+bundle_id = org.sugarlabs.ComunicatorMaker
+icon = activity-helloworld
+exec = sugar-activity activity.ComunicatorMakerActivity
+activity_version = 1
+show_launcher = yes
