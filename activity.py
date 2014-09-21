@@ -127,11 +127,13 @@ class BoardEditPanel(Gtk.EventBox):
         vbox.pack_start(title_label, False, False, 0)
         grid = Gtk.Grid()
         vbox.pack_start(grid, True, True, 0)
+        self._editors = []
         for row in range(2):
             for column in range(3):
                 picto_editor = PictoEditPanel()
                 picto_editor.set_hexpand(True)
                 picto_editor.set_vexpand(True)
+                self._editors.append(picto_editor)
                 grid.attach(picto_editor, column, row, 1, 1)
 
 
@@ -142,11 +144,15 @@ class PictoEditPanel(Gtk.EventBox):
         vbox = Gtk.VBox()
         self.add(vbox)
         self.image = Gtk.Image()
-        self.set_image('./pictograms/no.png')
+        self._label = None
         vbox.add(self.image)
         self.entry = Gtk.Entry()
         self.entry.props.margin = 20
         vbox.add(self.entry)
+        self.set_image('./pictograms/no.png')
+        self.set_label('')
+        # set as None to clean the default no.png
+        self._image_file_name = None
 
     def set_image(self, image_file_name):
         self._image_file_name = image_file_name
@@ -154,3 +160,15 @@ class PictoEditPanel(Gtk.EventBox):
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
             './pictograms/no.png', image_size, image_size)
         self.image.set_from_pixbuf(pixbuf)
+        if self._label is None:
+            self.set_label(image_file_name[image_file_name.rfind('/'):])
+
+    def get_image_file_name(self):
+        return self._image_file_name
+
+    def set_label(self, label):
+        self._label = label
+        self.entry.set_text(label)
+
+    def get_label(self):
+        return self._label
