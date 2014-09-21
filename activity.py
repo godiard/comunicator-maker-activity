@@ -19,6 +19,7 @@ import logging
 
 from gi.repository import Gtk
 from gi.repository import Gdk
+from gi.repository import GdkPixbuf
 
 from gettext import gettext as _
 
@@ -123,13 +124,14 @@ class BoardEditPanel(Gtk.EventBox):
         title_label.set_valign(Gtk.Align.START)
         title_label.set_halign(Gtk.Align.START)
         title_label.props.margin = 10
-        vbox.add(title_label)
-        # size = Gdk.Screen.width() / 6
+        vbox.pack_start(title_label, False, False, 0)
         grid = Gtk.Grid()
-        vbox.add(grid)
+        vbox.pack_start(grid, True, True, 0)
         for row in range(2):
             for column in range(3):
                 picto_editor = PictoEditPanel()
+                picto_editor.set_hexpand(True)
+                picto_editor.set_vexpand(True)
                 grid.attach(picto_editor, column, row, 1, 1)
 
 
@@ -140,6 +142,15 @@ class PictoEditPanel(Gtk.EventBox):
         vbox = Gtk.VBox()
         self.add(vbox)
         self.image = Gtk.Image()
+        self.set_image('./pictograms/no.png')
         vbox.add(self.image)
         self.entry = Gtk.Entry()
+        self.entry.props.margin = 20
         vbox.add(self.entry)
+
+    def set_image(self, image_file_name):
+        self._image_file_name = image_file_name
+        image_size = Gdk.Screen.height() / 4
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
+            './pictograms/no.png', image_size, image_size)
+        self.image.set_from_pixbuf(pixbuf)
