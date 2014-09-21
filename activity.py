@@ -86,6 +86,8 @@ class ComunicatorMakerActivity(activity.Activity):
     def _create_picto_treeview(self):
         self._picto_tree_view = Gtk.TreeView()
         self._picto_tree_view.props.headers_visible = False
+        self._picto_tree_view.connect('row-activated',
+                                      self.__picto_tree_row_activated_cb)
 
         cell = Gtk.CellRendererText()
         self._column = Gtk.TreeViewColumn()
@@ -113,6 +115,17 @@ class ComunicatorMakerActivity(activity.Activity):
     def _filter_function(self, path):
         return True
 
+    def __picto_tree_row_activated_cb(self, treeview, path, col):
+        model = treeview.get_model()
+        image_path = model[path][1]
+        if os.path.isfile(image_path):
+            self._board_edit_panel.add_image(image_path)
+        else:
+            if treeview.row_expanded(path):
+                treeview.collapse_row(path)
+            else:
+                treeview.expand_to_path(path)
+
 
 class BoardEditPanel(Gtk.EventBox):
 
@@ -136,6 +149,12 @@ class BoardEditPanel(Gtk.EventBox):
                 self._editors.append(picto_editor)
                 grid.attach(picto_editor, column, row, 1, 1)
 
+    def add_image(self, image_file_name):
+        for editor in self._editors:
+            if editor.get_image_file_name() is None:
+                editor.set_image(image_file_name)
+                break
+
 
 class PictoEditPanel(Gtk.EventBox):
 
@@ -158,7 +177,7 @@ class PictoEditPanel(Gtk.EventBox):
         self._image_file_name = image_file_name
         image_size = Gdk.Screen.height() / 4
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
-            './pictograms/no.png', image_size, image_size)
+            image_file_name, image_size, image_size)
         self.image.set_from_pixbuf(pixbuf)
         if self._label is None:
             self.set_label(image_file_name[image_file_name.rfind('/'):])
