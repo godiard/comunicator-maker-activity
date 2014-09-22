@@ -224,11 +224,16 @@ class PictoEditPanel(Gtk.EventBox):
         vbox.add(self.image)
         self.entry = Gtk.Entry()
         self.entry.props.margin = 20
+        self._edited = False
+        self.entry.connect('key-press-event', self._entry_edited_cb)
         vbox.add(self.entry)
         self.set_image('./pictograms/no.png')
         self.set_label('')
         # set as None to clean the default no.png
         self._image_file_name = None
+
+    def _entry_edited_cb(self, entry, data=None):
+        self._edited = True
 
     def set_image(self, image_file_name):
         self._image_file_name = image_file_name
@@ -236,7 +241,7 @@ class PictoEditPanel(Gtk.EventBox):
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
             image_file_name, image_size, image_size)
         self.image.set_from_pixbuf(pixbuf)
-        if self.get_label() == '':
+        if self._edited is False:
             image_name = image_file_name[image_file_name.rfind('/') + 1:]
             image_name = image_name[:image_name.find('.')]
             self.set_label(image_name.upper())
