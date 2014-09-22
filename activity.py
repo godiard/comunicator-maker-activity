@@ -126,6 +126,10 @@ class ComunicatorMakerActivity(activity.Activity):
             else:
                 treeview.expand_to_path(path)
 
+    def write_file(self, file_name):
+        # test reading the data from the board
+        logging.error(self._board_edit_panel.get_data())
+
 
 class BoardEditPanel(Gtk.EventBox):
 
@@ -137,7 +141,13 @@ class BoardEditPanel(Gtk.EventBox):
         title_label.set_valign(Gtk.Align.START)
         title_label.set_halign(Gtk.Align.START)
         title_label.props.margin = 10
-        vbox.pack_start(title_label, False, False, 0)
+
+        hbox = Gtk.HBox()
+        hbox.pack_start(title_label, False, False, 10)
+        self._title_entry = Gtk.Entry()
+        hbox.pack_start(self._title_entry, True, True, 10)
+
+        vbox.pack_start(hbox, False, False, 0)
         grid = Gtk.Grid()
         vbox.pack_start(grid, True, True, 0)
         self._editors = []
@@ -155,6 +165,18 @@ class BoardEditPanel(Gtk.EventBox):
                 editor.set_image(image_file_name)
                 break
 
+    def get_data(self):
+        data = {}
+        data['name'] = self._title_entry.get_text()
+        options = []
+        data['options'] = options
+        for editor in self._editors:
+            if editor.get_image_file_name() is not None:
+                option = {'image_file_name': editor.get_image_file_name(),
+                          'title': editor.get_label()}
+                options.append(option)
+        return data
+
 
 class PictoEditPanel(Gtk.EventBox):
 
@@ -163,7 +185,6 @@ class PictoEditPanel(Gtk.EventBox):
         vbox = Gtk.VBox()
         self.add(vbox)
         self.image = Gtk.Image()
-        self._label = None
         vbox.add(self.image)
         self.entry = Gtk.Entry()
         self.entry.props.margin = 20
@@ -179,15 +200,16 @@ class PictoEditPanel(Gtk.EventBox):
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
             image_file_name, image_size, image_size)
         self.image.set_from_pixbuf(pixbuf)
-        if self._label is None:
-            self.set_label(image_file_name[image_file_name.rfind('/'):])
+        if self.get_label() == '':
+            image_name = image_file_name[image_file_name.rfind('/') + 1:]
+            image_name = image_name[:image_name.find('.')]
+            self.set_label(image_name.upper())
 
     def get_image_file_name(self):
         return self._image_file_name
 
     def set_label(self, label):
-        self._label = label
         self.entry.set_text(label)
 
     def get_label(self):
-        return self._label
+        return self.entry.get_text()
