@@ -16,6 +16,7 @@
 
 import os
 import logging
+import json
 
 from gi.repository import Gtk
 from gi.repository import Gdk
@@ -57,6 +58,8 @@ class ComunicatorMakerActivity(activity.Activity):
 
         self.set_toolbar_box(toolbar_box)
         toolbar_box.show()
+
+        self._boards = []
 
         background = Gtk.EventBox()
         background.modify_bg(Gtk.StateType.NORMAL,
@@ -129,6 +132,21 @@ class ComunicatorMakerActivity(activity.Activity):
     def write_file(self, file_name):
         # test reading the data from the board
         logging.error(self._board_edit_panel.get_data())
+        self._boards.append(self._board_edit_panel.get_data())
+        with open(file_name, 'w') as json_file:
+            json.dump(self._boards, json_file)
+
+    def read_file(self, file_name):
+        with open(file_name) as json_file:
+            self._boards = json.load(json_file)
+        logging.error('READ_FILE boards = %s', self._boards)
+        # display the first board
+        if len(self._boards) > 0:
+            board = self._boards[0]
+            self._board_edit_panel.set_name(board['name'])
+            for option in board['options']:
+                self._board_edit_panel.add_image(option['image_file_name'],
+                                                 option['title'])
 
 
 class BoardEditPanel(Gtk.EventBox):
@@ -159,11 +177,16 @@ class BoardEditPanel(Gtk.EventBox):
                 self._editors.append(picto_editor)
                 grid.attach(picto_editor, column, row, 1, 1)
 
-    def add_image(self, image_file_name):
+    def add_image(self, image_file_name, label=None):
         for editor in self._editors:
             if editor.get_image_file_name() is None:
                 editor.set_image(image_file_name)
+                if label is not None:
+                    editor.set_label(label)
                 break
+
+    def set_name(self, board_title):
+        self._title_entry.set_text(board_title)
 
     def get_data(self):
         data = {}
