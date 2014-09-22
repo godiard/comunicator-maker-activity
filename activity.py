@@ -174,16 +174,29 @@ class BoardEditPanel(Gtk.EventBox):
                 picto_editor = PictoEditPanel()
                 picto_editor.set_hexpand(True)
                 picto_editor.set_vexpand(True)
+                picto_editor.connect('button-press-event',
+                                     self._editor_selected_cb)
                 self._editors.append(picto_editor)
                 grid.attach(picto_editor, column, row, 1, 1)
 
+        self._selected = 0
+
+    def _editor_selected_cb(self, editor, data=None):
+        last_editor = self._editors[self._selected]
+        last_editor.modify_bg(Gtk.StateType.NORMAL,
+                              style.Color('#FFFFFF').get_gdk_color())
+
+        self._selected = self._editors.index(editor)
+        editor.modify_bg(Gtk.StateType.NORMAL,
+                         style.Color('#FF0000').get_gdk_color())
+
+        logging.error('_last_selected is %d', self._selected)
+
     def add_image(self, image_file_name, label=None):
-        for editor in self._editors:
-            if editor.get_image_file_name() is None:
-                editor.set_image(image_file_name)
-                if label is not None:
-                    editor.set_label(label)
-                break
+        editor = self._editors[self._selected]
+        editor.set_image(image_file_name)
+        if label is not None:
+            editor.set_label(label)
 
     def set_name(self, board_title):
         self._title_entry.set_text(board_title)
@@ -211,11 +224,16 @@ class PictoEditPanel(Gtk.EventBox):
         vbox.add(self.image)
         self.entry = Gtk.Entry()
         self.entry.props.margin = 20
+        self._edited = False
+        self.entry.connect('key-press-event', self._entry_edited_cb)
         vbox.add(self.entry)
         self.set_image('./pictograms/no.png')
         self.set_label('')
         # set as None to clean the default no.png
         self._image_file_name = None
+
+    def _entry_edited_cb(self, entry, data=None):
+        self._edited = True
 
     def set_image(self, image_file_name):
         self._image_file_name = image_file_name
@@ -223,7 +241,7 @@ class PictoEditPanel(Gtk.EventBox):
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
             image_file_name, image_size, image_size)
         self.image.set_from_pixbuf(pixbuf)
-        if self.get_label() == '':
+        if self._edited is False:
             image_name = image_file_name[image_file_name.rfind('/') + 1:]
             image_name = image_name[:image_name.find('.')]
             self.set_label(image_name.upper())
