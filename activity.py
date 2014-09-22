@@ -174,16 +174,29 @@ class BoardEditPanel(Gtk.EventBox):
                 picto_editor = PictoEditPanel()
                 picto_editor.set_hexpand(True)
                 picto_editor.set_vexpand(True)
+                picto_editor.connect('button-press-event',
+                                     self._editor_selected_cb)
                 self._editors.append(picto_editor)
                 grid.attach(picto_editor, column, row, 1, 1)
 
+        self._selected = 0
+
+    def _editor_selected_cb(self, editor, data=None):
+        last_editor = self._editors[self._selected]
+        last_editor.modify_bg(Gtk.StateType.NORMAL,
+                              style.Color('#FFFFFF').get_gdk_color())
+
+        self._selected = self._editors.index(editor)
+        editor.modify_bg(Gtk.StateType.NORMAL,
+                         style.Color('#FF0000').get_gdk_color())
+
+        logging.error('_last_selected is %d', self._selected)
+
     def add_image(self, image_file_name, label=None):
-        for editor in self._editors:
-            if editor.get_image_file_name() is None:
-                editor.set_image(image_file_name)
-                if label is not None:
-                    editor.set_label(label)
-                break
+        editor = self._editors[self._selected]
+        editor.set_image(image_file_name)
+        if label is not None:
+            editor.set_label(label)
 
     def set_name(self, board_title):
         self._title_entry.set_text(board_title)
