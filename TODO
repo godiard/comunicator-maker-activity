@@ -1,0 +1,14 @@
+COMUNICATOR MAKER TODO:
+
+* Reordenar board
+* Mostrar cual es el pictograma activo
+* Si hay alguno activo, al seleccionar una imagen la cambia
+* Se vuelve activo al hacer click en el eventbox, la imagen
+o hacer focus del entry.
+* Reordenar
+* Mostrar lista de boards
+* Editar links entre pictogramas y boards
+* Agregar una imagen desde el Journal
+* Cambiar grabacion/lectura, ahora es un json de un solo board,
+hay que grabar todos y zipearlo para meter las imagenes.
+* Crear el bundle
