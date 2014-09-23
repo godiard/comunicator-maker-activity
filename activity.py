@@ -72,6 +72,11 @@ class ComunicatorMakerActivity(activity.Activity):
         toolbar_box.toolbar.insert(add_image_btn, -1)
         # add_image_btn.connect('clicked', self._change_treenotebook_page, 1)
 
+        accept_board_btn = ToolButton(icon_name='dialog-ok')
+        accept_board_btn.set_tooltip(_('Store board'))
+        toolbar_box.toolbar.insert(accept_board_btn, -1)
+        accept_board_btn.connect('clicked', self.__store_board_cb)
+
         separator = Gtk.SeparatorToolItem()
         separator.props.draw = False
         separator.set_expand(True)
@@ -109,6 +114,15 @@ class ComunicatorMakerActivity(activity.Activity):
         scrolled.add_with_viewport(self._picto_tree_view)
         self._treenotebook.append_page(scrolled, None)
 
+        # treeview with boards
+        self._create_boards_treeview()
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.props.hscrollbar_policy = Gtk.PolicyType.AUTOMATIC
+        scrolled.props.vscrollbar_policy = Gtk.PolicyType.AUTOMATIC
+        scrolled.set_size_request(Gdk.Screen.width() / 4, -1)
+        scrolled.add_with_viewport(self._boards_tree_view)
+        self._treenotebook.append_page(scrolled, None)
+
         self._board_edit_panel = BoardEditPanel()
         hbox.pack_start(self._board_edit_panel, True, True, 0)
 
@@ -119,6 +133,7 @@ class ComunicatorMakerActivity(activity.Activity):
     def _change_treenotebook_page(self, button, page):
         self._treenotebook.set_current_page(page)
 
+    # pictograms treeview
     def _create_picto_treeview(self):
         self._picto_tree_view = Gtk.TreeView()
         self._picto_tree_view.props.headers_visible = False
@@ -162,10 +177,59 @@ class ComunicatorMakerActivity(activity.Activity):
             else:
                 treeview.expand_to_path(path)
 
+    # boards treeview
+    def _create_boards_treeview(self):
+        self._boards_tree_view = Gtk.TreeView()
+        self._boards_tree_view.props.headers_visible = False
+        self._boards_tree_view.connect('row-activated',
+                                       self.__board_tree_row_activated_cb)
+
+        cell = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn()
+        column.pack_start(cell, True)
+        column.add_attribute(cell, 'text', 0)
+        self._boards_tree_view.append_column(column)
+        self._boards_tree_view.set_search_column(0)
+
+        self._boards_tree_view.set_model(Gtk.TreeStore(str))
+        self._boards_model = self._boards_tree_view.get_model()
+
+    def __board_tree_row_activated_cb(self, treeview, path, col):
+        model = treeview.get_model()
+        board_name = model[path][0]
+        self._display_board(board_name)
+
+    def _load_boards(self):
+        for board in self._boards:
+            self._boards_model.append(None, [board['name']])
+
+    def __store_board_cb(self, button):
+        board_index = -1
+        board_name = self._board_edit_panel.get_name()
+        for board in self._boards:
+            if board['name'] == board_name:
+                board_index = self._boards.index(board)
+
+        if board_index == -1:
+            # is a new board or was renamed
+            self._boards.append(self._board_edit_panel.get_data())
+            self._boards_model.append(None, [board['name']])
+        else:
+            self._boards[board_index] = self._board_edit_panel.get_data()
+
+    def _display_board(self, board_name):
+        self._board_edit_panel.clean()
+        for board in self._boards:
+            if board['name'] == board_name:
+                self._board_edit_panel.set_name(board['name'])
+                for option in board['options']:
+                    self._board_edit_panel.add_image(
+                        option['image_file_name'],
+                        option['title'])
+
     def write_file(self, file_name):
         # test reading the data from the board
-        logging.error(self._board_edit_panel.get_data())
-        self._boards.append(self._board_edit_panel.get_data())
+        logging.error(self._boards)
         with open(file_name, 'w') as json_file:
             json.dump(self._boards, json_file)
 
@@ -176,10 +240,8 @@ class ComunicatorMakerActivity(activity.Activity):
         # display the first board
         if len(self._boards) > 0:
             board = self._boards[0]
-            self._board_edit_panel.set_name(board['name'])
-            for option in board['options']:
-                self._board_edit_panel.add_image(option['image_file_name'],
-                                                 option['title'])
+            self._display_board(board['name'])
+        self._load_boards()
 
 
 class BoardEditPanel(Gtk.EventBox):
@@ -212,7 +274,13 @@ class BoardEditPanel(Gtk.EventBox):
                 self._editors.append(picto_editor)
                 grid.attach(picto_editor, column, row, 1, 1)
 
-        self._selected = 0
+        self._selected = -1
+
+    def clean(self):
+        self._selected = -1
+        self._title_entry.set_text('')
+        for editor in self._editors:
+            editor.clean()
 
     def _editor_selected_cb(self, editor, data=None):
         last_editor = self._editors[self._selected]
@@ -226,13 +294,22 @@ class BoardEditPanel(Gtk.EventBox):
         logging.error('_last_selected is %d', self._selected)
 
     def add_image(self, image_file_name, label=None):
-        editor = self._editors[self._selected]
+        if self._selected == -1:
+            for editor in self._editors:
+                if editor.get_image_file_name() is None:
+                    break
+        else:
+            editor = self._editors[self._selected]
+
         editor.set_image(image_file_name)
         if label is not None:
             editor.set_label(label)
 
     def set_name(self, board_title):
         self._title_entry.set_text(board_title)
+
+    def get_name(self):
+        return self._title_entry.get_text()
 
     def get_data(self):
         data = {}
@@ -257,16 +334,19 @@ class PictoEditPanel(Gtk.EventBox):
         vbox.add(self.image)
         self.entry = Gtk.Entry()
         self.entry.props.margin = 20
-        self._edited = False
         self.entry.connect('key-press-event', self._entry_edited_cb)
         vbox.add(self.entry)
+        self.clean()
+
+    def _entry_edited_cb(self, entry, data=None):
+        self._edited = True
+
+    def clean(self):
+        self._edited = False
         self.set_image('./pictograms/no.png')
         self.set_label('')
         # set as None to clean the default no.png
         self._image_file_name = None
-
-    def _entry_edited_cb(self, entry, data=None):
-        self._edited = True
 
     def set_image(self, image_file_name):
         self._image_file_name = image_file_name
