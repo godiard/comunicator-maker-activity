@@ -28,6 +28,8 @@ from sugar3.activity import activity
 from sugar3.graphics.toolbarbox import ToolbarBox
 from sugar3.activity.widgets import ActivityToolbarButton
 from sugar3.activity.widgets import StopButton
+from sugar3.graphics.toolbutton import ToolButton
+from sugar3.graphics.radiotoolbutton import RadioToolButton
 from sugar3.graphics import style
 
 
@@ -45,6 +47,30 @@ class ComunicatorMakerActivity(activity.Activity):
         activity_button = ActivityToolbarButton(self)
         toolbar_box.toolbar.insert(activity_button, 0)
         activity_button.show()
+
+        toolbar_box.toolbar.insert(Gtk.SeparatorToolItem(), -1)
+
+        show_pictograms_btn = RadioToolButton(icon_name='pictograms')
+        show_pictograms_btn.props.group = show_pictograms_btn
+        show_pictograms_btn.set_active(True)
+        show_pictograms_btn.set_tooltip(_('Show pictograms'))
+        toolbar_box.toolbar.insert(show_pictograms_btn, -1)
+        show_pictograms_btn.connect('clicked',
+                                    self._change_treenotebook_page, 0)
+
+        show_bords_btn = RadioToolButton(icon_name='boards')
+        show_bords_btn.props.group = show_pictograms_btn
+        show_bords_btn.set_active(False)
+        show_bords_btn.set_tooltip(_('Show boards'))
+        toolbar_box.toolbar.insert(show_bords_btn, -1)
+        show_bords_btn.connect('clicked', self._change_treenotebook_page, 1)
+
+        toolbar_box.toolbar.insert(Gtk.SeparatorToolItem(), -1)
+
+        add_image_btn = ToolButton(icon_name='insert-picture')
+        add_image_btn.set_tooltip(_('Add image from Journal'))
+        toolbar_box.toolbar.insert(add_image_btn, -1)
+        # add_image_btn.connect('clicked', self._change_treenotebook_page, 1)
 
         separator = Gtk.SeparatorToolItem()
         separator.props.draw = False
@@ -70,6 +96,10 @@ class ComunicatorMakerActivity(activity.Activity):
         hbox = Gtk.HBox()
         background.add(hbox)
 
+        self._treenotebook = Gtk.Notebook()
+        self._treenotebook.set_show_tabs(False)
+        hbox.pack_start(self._treenotebook, False, False, 0)
+
         # treeview with pictograms
         self._create_picto_treeview()
         scrolled = Gtk.ScrolledWindow()
@@ -77,7 +107,7 @@ class ComunicatorMakerActivity(activity.Activity):
         scrolled.props.vscrollbar_policy = Gtk.PolicyType.AUTOMATIC
         scrolled.set_size_request(Gdk.Screen.width() / 4, -1)
         scrolled.add_with_viewport(self._picto_tree_view)
-        hbox.pack_start(scrolled, False, False, 0)
+        self._treenotebook.append_page(scrolled, None)
 
         self._board_edit_panel = BoardEditPanel()
         hbox.pack_start(self._board_edit_panel, True, True, 0)
@@ -85,6 +115,9 @@ class ComunicatorMakerActivity(activity.Activity):
         self._load_pictograms()
 
         self.show_all()
+
+    def _change_treenotebook_page(self, button, page):
+        self._treenotebook.set_current_page(page)
 
     def _create_picto_treeview(self):
         self._picto_tree_view = Gtk.TreeView()
